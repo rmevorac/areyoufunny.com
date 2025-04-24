@@ -512,9 +512,15 @@ export default function Home() {
     }
   };
 
+  // Dynamic classes for the main container
+  const mainContainerClasses = `flex flex-col items-center min-h-screen bg-white text-gray-900 p-4 md:p-8 ${
+    (appState === 'recording' || appState === 'uploading') ? 'justify-center' : '' 
+  }`;
+
   return (
     <PlaybackContextProvider> 
-      <div className="flex flex-col items-center min-h-screen bg-white text-gray-900 p-4 md:p-8">
+      {/* Apply dynamic classes */}
+      <div className={mainContainerClasses}>
         <TopSection 
           appState={appState}
           user={user}
@@ -529,48 +535,51 @@ export default function Home() {
           isSubmittingPostOrScratch={isSubmitting}
         />
 
-        <div className="w-full max-w-2xl mt-12">
-          <FeedTabs 
-            activeTab={activeTab} 
-            setActiveTab={handleTabChange} // Use handler function
-            sliderStyle={sliderStyle}
-            tabsRef={tabsRef}
-            tabsContainerRef={tabsContainerRef}
-          />
-          
-          {/* === Conditional Feed Content Area === */} 
+        {/* Conditionally render the Feed Section */}
+        {(appState === 'idle' || appState === 'finished' || appState === 'limitReached') && (
+          <div className="w-full max-w-2xl mt-12">
+            <FeedTabs 
+              activeTab={activeTab} 
+              setActiveTab={handleTabChange} // Use handler function
+              sliderStyle={sliderStyle}
+              tabsRef={tabsRef}
+              tabsContainerRef={tabsContainerRef}
+            />
+            
+            {/* === Conditional Feed Content Area === */} 
 
-          {/* 1. Show Initial Loading Indicator (Delayed) */} 
-          {isLoadingFeed && showInitialLoadIndicator && (
-            <div className="text-center py-10">
-              <p className="text-gray-600">Loading feed...</p>
-            </div>
-          )}
+            {/* 1. Show Initial Loading Indicator (Delayed) */} 
+            {isLoadingFeed && showInitialLoadIndicator && (
+              <div className="text-center py-10">
+                <p className="text-gray-600">Loading feed...</p>
+              </div>
+            )}
 
-          {/* 2. Render FeedList and Observer only when NOT initial loading */} 
-          {!isLoadingFeed && (
-            <>
-              <FeedList 
-                sets={feedSets}
-                handleVote={handleVote} 
-                currentUser={user}
-                showInitialLoadIndicator={showInitialLoadIndicator} // Still pass, FeedList might use for internal logic
-                showMoreLoadIndicator={showMoreLoadIndicator}
-                feedError={feedError}
-                hasMore={hasMore}
-              />
+            {/* 2. Render FeedList and Observer only when NOT initial loading */} 
+            {!isLoadingFeed && (
+              <>
+                <FeedList 
+                  sets={feedSets}
+                  handleVote={handleVote} 
+                  currentUser={user}
+                  showInitialLoadIndicator={showInitialLoadIndicator} // Still pass, FeedList might use for internal logic
+                  showMoreLoadIndicator={showMoreLoadIndicator}
+                  feedError={feedError}
+                  hasMore={hasMore}
+                />
 
-              {/* Observer Target for Infinite Scroll */}
-              {/* Render only if more exist (FeedList might render end message based on hasMore) */} 
-              {hasMore && (
-                  <div ref={observerTarget} style={{ height: '1px' }} />
-              )}
-            </>
-          )}
-          
-          {/* === End Conditional Feed Content Area === */} 
+                {/* Observer Target for Infinite Scroll */}
+                {/* Render only if more exist (FeedList might render end message based on hasMore) */} 
+                {hasMore && (
+                    <div ref={observerTarget} style={{ height: '1px' }} />
+                )}
+              </>
+            )}
+            
+            {/* === End Conditional Feed Content Area === */} 
 
-        </div>
+          </div>
+        )}
       </div>
     </PlaybackContextProvider>
   );

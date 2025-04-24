@@ -35,7 +35,7 @@ const CountdownDisplay: React.FC<CountdownDisplayProps> = ({ initialCount, onCou
   }, [countdown, onCountdownComplete]);
 
   return (
-    <div className="flex flex-col items-center justify-center space-y-4 p-4 bg-white">
+    <div className="flex flex-col items-center justify-center space-y-4 p-4">
       {/* Optional text above */} 
       {/* <p className="text-xl font-semibold text-yellow-500">Get Ready...</p> */}
       
