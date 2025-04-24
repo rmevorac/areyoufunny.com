@@ -33,14 +33,14 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api routes that *don't* need protection (if any, e.g. public status check)
+     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * 
-     * This ensures the middleware runs on all pages and relevant API routes,
-     * but skips static assets and framework internals.
+     *
+     * This ensures the middleware runs on pages but skips API routes,
+     * static assets, and framework internals.
      */
-    '/((?!api/public|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 }; 
