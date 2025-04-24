@@ -11,8 +11,9 @@ export function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // 2. If trying to access the login page or API route, allow it
-  if (pathname.startsWith('/login') || pathname.startsWith('/api/login')) {
+  // 2. If trying to access the login page itself, allow it
+  // (API routes are excluded by the matcher below)
+  if (pathname.startsWith('/login')) {
     return NextResponse.next();
   }
 
