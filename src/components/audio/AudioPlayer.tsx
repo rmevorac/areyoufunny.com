@@ -6,6 +6,7 @@ import { usePlaybackContext } from '@/contexts/PlaybackContext'; // Import the c
 interface AudioPlayerProps {
   src: string;
   durationMs: number; // Known duration in milliseconds from DB
+  createdAt: string; // Add prop back
 }
 
 // Keep bar heights array for path generation logic
@@ -34,7 +35,7 @@ const generatePathData = (heights: number[], maxSvgHeight: number): string => {
 const SVG_VIEWBOX_HEIGHT = 20; // Max height in SVG coordinate system
 const waveformPathData = generatePathData(waveformBarHeights, SVG_VIEWBOX_HEIGHT);
 
-const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, durationMs }) => {
+const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, durationMs, createdAt }) => {
   // Get context state and setter
   const { currentlyPlayingSrc, setCurrentlyPlayingSrc } = usePlaybackContext();
 
@@ -47,6 +48,9 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, durationMs }) => {
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const waveformContainerRef = useRef<HTMLDivElement>(null);
+
+  // Re-enable formattedDate
+  const formattedDate = createdAt ? new Date(createdAt).toLocaleString() : 'Date unavailable';
 
   // Effect to pause this player if another one starts playing
   useEffect(() => {
@@ -206,7 +210,11 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, durationMs }) => {
   const clipPathId = useCallback(() => `clipPath-${src.replace(/[^a-zA-Z0-9]/g, '')}`, [src]);
 
   return (
-    <div className="bg-gray-100 p-3 rounded-lg shadow w-full mx-auto my-2">
+    // Add small bottom margin if date is shown
+    <div className="bg-gray-100 p-3 rounded-lg shadow w-full mx-auto my-2 mb-3">
+      {/* Uncomment date display */}
+       <p className="text-xs text-gray-500 mb-1">Recorded: {formattedDate}</p>
+      
       <audio key={src} ref={audioRef} src={src} preload="metadata" />
 
       <div className="flex items-center space-x-2">
