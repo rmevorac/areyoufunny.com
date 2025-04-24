@@ -51,9 +51,10 @@ export default function HistoryPage() {
         }
 
         setSets(setsData || []);
-      } catch (err: any) {
-        console.error("Error fetching sets:", err);
-        setError("Failed to load your past sets. Please try again later.");
+      } catch (error) {
+        console.error("Error fetching sets:", error);
+        const message = error instanceof Error ? error.message : "Unknown error";
+        setError(`Failed to load your past sets. Please try again later. (${message})`);
       } finally {
         setLoading(false);
       }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback, MouseEvent, TouchEvent } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { usePlaybackContext } from '@/contexts/PlaybackContext'; // Import the context hook
 
 interface AudioPlayerProps {
@@ -8,17 +8,6 @@ interface AudioPlayerProps {
   createdAt: string; // Expecting ISO string or date object string representation
   durationMs: number; // Known duration in milliseconds from DB
 }
-
-// Helper function to format time (MM:SS)
-const formatTime = (timeInSeconds: number | null): string => {
-  // Handle null, NaN, or Infinity
-  if (timeInSeconds === null || !Number.isFinite(timeInSeconds)) {
-    return '--:--'; // Or '0:00' if preferred for unknown duration
-  }
-  const minutes = Math.floor(timeInSeconds / 60);
-  const seconds = Math.floor(timeInSeconds % 60);
-  return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-};
 
 // Keep bar heights array for path generation logic
 const waveformBarHeights = [
@@ -59,8 +48,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, createdAt, durationMs })
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const waveformContainerRef = useRef<HTMLDivElement>(null);
-
-  const formattedDate = createdAt ? new Date(createdAt).toLocaleString() : 'Date unavailable';
 
   // Effect to pause this player if another one starts playing
   useEffect(() => {

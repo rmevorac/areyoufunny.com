@@ -150,9 +150,11 @@ const RecordingInterface: React.FC<RecordingInterfaceProps> = ({ targetDurationM
           stopRecording(true);
       }, targetDurationMs);
 
-    } catch (err: any) {
-      console.error('Error accessing microphone or starting recording:', err);
-      setMicError(`Mic Error: ${err.name === 'NotAllowedError' ? 'Permission denied.' : err.message}. Please check browser settings.`);
+    } catch (error) {
+      console.error('Error accessing microphone or starting recording:', error);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      const specificError = error instanceof Error && error.name === 'NotAllowedError' ? 'Permission denied.' : message;
+      setMicError(`Mic Error: ${specificError}. Please check browser settings.`);
       stopRecording();
       setIsPreparing(false); 
       if (preparingTimerRef.current) clearTimeout(preparingTimerRef.current);
@@ -198,12 +200,13 @@ const RecordingInterface: React.FC<RecordingInterfaceProps> = ({ targetDurationM
           setShowPreparingMessage(true); 
       }, 2000); 
 
-      startRecording().catch((err: any) => {
-         console.error("Error during startRecording triggered by countdown completion:", err);
+      startRecording().catch((error) => {
+         console.error("Error during startRecording triggered by countdown completion:", error);
+         const message = error instanceof Error ? error.message : 'Unknown error';
+         setMicError(`Failed to start recording: ${message}`);
          setIsPreparing(false); 
          if (preparingTimerRef.current) clearTimeout(preparingTimerRef.current); 
          setShowPreparingMessage(false);
-         setMicError("Failed to start recording. Please check microphone permissions.");
       });
   }, [startRecording]);
 

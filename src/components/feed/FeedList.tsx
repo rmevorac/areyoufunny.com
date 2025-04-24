@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef } from 'react';
+import React from 'react';
 import FeedItem from './FeedItem'; // Import FeedItem
 import { PlaybackContextProvider } from '@/contexts/PlaybackContext';
 import { User } from '@supabase/supabase-js'; // Import User type

@@ -196,10 +196,11 @@ export default function Home() {
           fetchFeed(true); // Force refresh
       }
 
-    } catch (error: any) {
-        console.error("Error during upload/DB insert:", error);
-        setErrorMessage(`Upload failed: ${error.message ?? 'Unknown error'}`);
-        setAppState('idle'); // Revert to idle on error
+    } catch (error) {
+      console.error("Error during upload/DB insert:", error);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      setErrorMessage(`Upload failed: ${message}`);
+      setAppState('idle'); 
     } finally {
       if (uploadingTimerRef.current) clearTimeout(uploadingTimerRef.current);
       setShowUploadingIndicator(false);
@@ -271,9 +272,9 @@ export default function Home() {
               setFeedSets([]); // Ensure sets are empty if first fetch returns nothing
           }
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error(`Error fetching ${activeTab} sets:`, error);
-      setFeedError(`Failed to load sets. Please try again.`);
+      setErrorMessage(`Failed to load sets. Please try again.`);
       setHasMore(false); 
     } finally {
        // Clear relevant timer and hide indicator
@@ -378,10 +379,9 @@ export default function Home() {
         }
         // --- End Sync --- 
         
-    } catch (error: any) {
+    } catch (error) {
         console.error("Vote failed:", error);
         setFeedError("Vote failed. Please try again."); 
-        // Revert optimistic update by refetching
         fetchFeed(false);
     }
   };
@@ -471,9 +471,10 @@ export default function Home() {
       // Simplest for now might be to clear lastSetData so buttons disappear,
       // though this prevents further scratching. Let's keep it for now.
 
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error posting set:", error);
-      setErrorMessage(`Failed to post set. Please try again: ${error.message ?? 'Unknown error'}`);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      setErrorMessage(`Failed to post set. Please try again: ${message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -502,9 +503,10 @@ export default function Home() {
       setAppState('idle');
       setLastSetData(null);
 
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error scratching set database record:", error);
-      setErrorMessage(`Failed to scratch set: ${error.message ?? 'Unknown error'}`);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      setErrorMessage(`Failed to scratch set: ${message}`);
     } finally {
       setIsSubmitting(false);
     }
