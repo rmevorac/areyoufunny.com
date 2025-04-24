@@ -1,0 +1,87 @@
+"use client";
+
+import React from 'react';
+import AudioPlayer from '@/components/audio/AudioPlayer';
+// import { ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/24/solid';
+
+// Define type for a single set item (matching page.tsx FeedSet)
+// Re-declare or import if shared
+type FeedSet = {
+  id: string;
+  created_at: string;
+  audio_url: string;
+  duration_ms: number;
+  user_id: string;
+  up_votes: number;
+  down_votes: number;
+  user_vote: 1 | -1 | null; 
+};
+
+// Helper (can be moved to a utils file)
+const formatUserId = (userId: string | undefined): string => {
+  if (!userId) return "Anon #????";
+  return `Anon #${userId.substring(0, 4).toUpperCase()}`;
+};
+
+interface FeedItemProps {
+  set: FeedSet;
+  handleVote: (setId: string, voteValue: 1 | -1) => void;
+  currentUser: any; // Pass current user to disable buttons if needed
+}
+
+const FeedItem: React.FC<FeedItemProps> = ({ set, handleVote, currentUser }) => {
+  const score = set.up_votes - set.down_votes;
+  return (
+    <li className="bg-white border border-gray-200 p-3 rounded-lg shadow flex justify-between items-center gap-4">
+      
+      {/* Left Section: Stack Player and User ID Vertically */}
+      <div className="flex flex-col flex-grow min-w-0">
+          {/* Player Wrapper - Use w-full */} 
+          <div className="w-full"> 
+              <AudioPlayer 
+                  src={set.audio_url} 
+                  createdAt={set.created_at} 
+                  durationMs={set.duration_ms}
+              />
+          </div>
+          {/* User Info - Below player, remove flex properties, add margin */}
+          <div className="mt-1"> 
+            <p className="text-xs font-medium text-gray-600"> {/* Adjusted size/color */} 
+              {formatUserId(set.user_id)}
+            </p>
+           </div>
+      </div>
+      
+      {/* Right Section: Vertical Votes */}
+      <div className="flex flex-col items-center space-y-1 flex-shrink-0">
+          <button 
+              onClick={() => handleVote(set.id, 1)} 
+              className={`p-1 rounded disabled:opacity-50 text-xl 
+                  ${set.user_vote === 1 ? 'bg-green-100' : 'hover:bg-green-50'} 
+                  ${set.user_vote === 1 ? 'text-green-600' : 'text-gray-500 hover:text-green-600'}`}
+              title="Upvote (Celebrate!)"
+              aria-label="Upvote (Celebrate!)"
+              disabled={!currentUser}
+          >
+              <span role="img" aria-label="Party Popper">🎉</span>
+          </button>
+          <span className="text-sm font-bold text-gray-900 min-w-[30px] text-center" title={`Score: ${score}`}>
+              {score} 
+          </span>
+          <button 
+              onClick={() => handleVote(set.id, -1)}
+              className={`p-1 rounded disabled:opacity-50 text-xl 
+                  ${set.user_vote === -1 ? 'bg-red-100' : 'hover:bg-red-50'} 
+                  ${set.user_vote === -1 ? 'text-red-600' : 'text-gray-500 hover:text-red-600'}`}
+              title="Downvote (Bomb)" 
+              aria-label="Downvote (Bomb)"
+              disabled={!currentUser}
+          >
+              <span role="img" aria-label="Bomb">💣</span>
+          </button>
+      </div>
+    </li>
+  );
+};
+
+export default FeedItem; 

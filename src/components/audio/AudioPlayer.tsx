@@ -20,6 +20,35 @@ const formatTime = (timeInSeconds: number | null): string => {
   return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
 };
 
+// Keep bar heights array for path generation logic
+const waveformBarHeights = [
+  4, 8, 12, 16, 20, 18, 14, 10, 6, 10, 14, 18, 20, 16, 12, 8, 
+  4, 8, 12, 16, 20, 18, 14, 10, 6, 10, 14, 18, 20, 16, 12, 8,
+  4, 8, 12, 16, 20, 18, 14, 10, 6, 10, 14, 18, 20, 16, 12, 8, 
+  4, 8, 12, 16, 20, 18, 14, 10, 6, 10, 14, 18, 20, 16, 12, 8 
+];
+
+// Function to generate SVG path data from heights
+const generatePathData = (heights: number[], maxSvgHeight: number): string => {
+  const width = heights.length;
+  let path = `M 0 ${maxSvgHeight}`; // Start at bottom-left
+  heights.forEach((h, i) => {
+    const barHeight = Math.max(1, h); // Ensure minimum visible height
+    const y = maxSvgHeight - barHeight;
+    // Draw rectangle-like shape for each bar for better visual separation
+    path += ` L ${i} ${y}`;        // Line to top-left
+    path += ` L ${i + 0.8} ${y}`;  // Line to top-right (0.8 controls bar width)
+    path += ` L ${i + 0.8} ${maxSvgHeight}`; // Line down to bottom-right
+    path += ` L ${i + 1} ${maxSvgHeight}`; // Line to next bar's bottom-left (creates gap)
+  });
+  // Close the overall shape if needed, though filling works per bar here
+  // path += ` L ${width} ${maxSvgHeight} Z`; // Might not be needed with rect approach
+  return path;
+};
+
+const SVG_VIEWBOX_HEIGHT = 20; // Max height in SVG coordinate system
+const waveformPathData = generatePathData(waveformBarHeights, SVG_VIEWBOX_HEIGHT);
+
 const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, createdAt, durationMs }) => {
   // Get context state and setter
   const { currentlyPlayingSrc, setCurrentlyPlayingSrc } = usePlaybackContext();
@@ -32,7 +61,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, createdAt, durationMs })
   const [isSeeking, setIsSeeking] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement>(null);
-  const progressBarRef = useRef<HTMLInputElement>(null); // Ref for the progress bar input
+  const waveformContainerRef = useRef<HTMLDivElement>(null);
 
   const formattedDate = createdAt ? new Date(createdAt).toLocaleString() : 'Date unavailable';
 
@@ -158,70 +187,101 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, createdAt, durationMs })
     setCurrentTime(newTime); // Update UI immediately
   };
 
-  const handleSeekMouseDown = () => {
-    setIsSeeking(true); // Indicate user is actively seeking
+  const handleSeek = (event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+    if (!waveformContainerRef.current || duration === null || duration <= 0) return;
+
+    const rect = waveformContainerRef.current.getBoundingClientRect();
+    // Use clientX for mouse events, use touch position for touch events
+    const clientX = 'touches' in event ? event.touches[0].clientX : event.clientX;
+    const offsetX = clientX - rect.left;
+    const percentage = Math.max(0, Math.min(1, offsetX / rect.width));
+    const newTime = percentage * duration;
+    
+    if (audioRef.current) {
+        audioRef.current.currentTime = newTime;
+    }
+    setCurrentTime(newTime); // Update UI immediately
   };
 
-  const handleSeekMouseUp = () => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = currentTime; // Set the actual audio time
-    }
-    setIsSeeking(false);
+  const handleWaveformMouseDown = (event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+      setIsSeeking(true);
+      // Immediately seek on mouse down/touch start for better responsiveness
+      handleSeek(event);
+      
+      const handleMouseMove = (moveEvent: MouseEvent | TouchEvent) => {
+        handleSeek(moveEvent as any); // Type assertion needed for unified handling
+      };
+
+      const handleMouseUp = () => {
+        setIsSeeking(false);
+        window.removeEventListener('mousemove', handleMouseMove as any);
+        window.removeEventListener('mouseup', handleMouseUp);
+        window.removeEventListener('touchmove', handleMouseMove as any);
+        window.removeEventListener('touchend', handleMouseUp);
+      };
+
+      // Add listeners to window for dragging outside the element
+      window.addEventListener('mousemove', handleMouseMove as any);
+      window.addEventListener('mouseup', handleMouseUp);
+      // Add touch listeners
+      window.addEventListener('touchmove', handleMouseMove as any);
+      window.addEventListener('touchend', handleMouseUp);
   };
+
+  const progressPercentage = (currentTime / (duration ?? 1)) * 100;
 
   return (
-    <div className="bg-gray-800 p-4 rounded-lg shadow w-full mx-auto my-4">
-      <p className="text-sm text-gray-400 mb-3">
-        Recorded on: {formattedDate}
-      </p>
-      {/* Hidden audio element */}
+    <div className="bg-gray-100 p-3 rounded-lg shadow w-full mx-auto my-2">
       <audio key={src} ref={audioRef} src={src} preload="metadata" />
 
-      {/* Custom Controls */}
-      <div className="flex items-center space-x-3">
+      <div className="flex items-center space-x-2">
         <button
           onClick={togglePlayPause}
-          className="text-white p-2 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors"
+          className="text-gray-800 p-1.5 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors flex-shrink-0"
           aria-label={isPlaying ? 'Pause' : 'Play'}
         >
           {isPlaying ? (
-            // Pause Icon (example using SVG or text)
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
             </svg>
           ) : (
-            // Play Icon (example using SVG or text)
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347c-.75.412-1.667-.13-1.667-.986V5.653Z" />
             </svg>
           )}
         </button>
 
-        <span className="text-xs text-gray-400 w-10 text-right">{formatTime(currentTime)}</span>
+        <div
+          ref={waveformContainerRef}
+          className="relative flex-grow h-10 bg-transparent cursor-pointer"
+          onMouseDown={handleWaveformMouseDown}
+          onTouchStart={handleWaveformMouseDown}
+        >
+          <svg 
+            width="100%" 
+            height="100%" 
+            viewBox={`0 0 ${waveformBarHeights.length} ${SVG_VIEWBOX_HEIGHT}`} 
+            preserveAspectRatio="none" 
+            className="absolute inset-0 pointer-events-none"
+          >
+            <defs>
+              <clipPath id={`clipPath-${src}`}>
+                <rect x="0" y="0" width={`${progressPercentage}%`} height={SVG_VIEWBOX_HEIGHT} />
+              </clipPath>
+            </defs>
 
-        <input
-          ref={progressBarRef}
-          type="range"
-          value={currentTime}
-          // Use actual duration state (now reliably set from prop)
-          // Fallback to 1 only if duration somehow still ends up null (shouldn't happen)
-          max={duration ?? 1}
-          step="0.01"
-          onMouseDown={handleSeekMouseDown}
-          onChange={handleProgressChange}
-          onMouseUp={handleSeekMouseUp}
-          onTouchStart={handleSeekMouseDown} // Add touch events for mobile
-          onTouchEnd={handleSeekMouseUp}
-          className="w-full h-1.5 bg-gray-600 rounded-full appearance-none cursor-pointer accent-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          // Disable seeking if the duration isn't known (prop was invalid/missing)
-          disabled={duration === null}
-          aria-label="Audio progress"
-        />
-
-        {/* Display rounded-up duration */}
-        <span className="text-xs text-gray-400 w-10">
-          {formatTime(duration !== null ? Math.ceil(duration) : null)}
-        </span>
+            <path 
+              d={waveformPathData}
+              fill="#D1D5DB"
+            />
+            
+            <path 
+              d={waveformPathData}
+              fill="#EF4444"
+              clipPath={`url(#clipPath-${src})`}
+            />
+          </svg>
+        </div>
       </div>
     </div>
   );

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { User } from '@supabase/supabase-js';
 import Link from 'next/link';
-import AudioPlayer from '@/components/AudioPlayer';
+import AudioPlayer from '@/components/audio/AudioPlayer';
 import { PlaybackContextProvider } from '@/contexts/PlaybackContext';
 
 interface Set {
