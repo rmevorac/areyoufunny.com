@@ -15,8 +15,8 @@ const Button: React.FC<ButtonProps> = ({
   className = '', 
   ...props 
 }) => {
-  // Base styles
-  let baseStyle = "font-semibold rounded-md transition-colors duration-200 shadow disabled:opacity-50 disabled:cursor-not-allowed";
+  // Use const as baseStyle is not reassigned
+  const baseStyle = "font-semibold rounded-md transition-colors duration-200 shadow disabled:opacity-50 disabled:cursor-not-allowed";
 
   // Size styles
   let sizeStyle = "";

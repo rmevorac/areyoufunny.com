@@ -15,7 +15,7 @@ interface Set {
 }
 
 export default function HistoryPage() {
-  const [user, setUser] = useState<User | null>(null);
+  const [, setUser] = useState<User | null>(null);
   const [sets, setSets] = useState<Set[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -84,7 +84,7 @@ export default function HistoryPage() {
       )}
 
       {!loading && !error && !loginRequired && sets.length === 0 && (
-        <p>You haven't recorded any sets yet.</p>
+        <p>You haven&apos;t recorded any sets yet.</p>
       )}
 
       {!loading && !error && !loginRequired && sets.length > 0 && (

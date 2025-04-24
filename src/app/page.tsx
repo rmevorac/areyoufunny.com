@@ -2,19 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import AudioPlayer from '@/components/audio/AudioPlayer';
 import { PlaybackContextProvider } from '@/contexts/PlaybackContext';
 import { User } from '@supabase/supabase-js';
-import Link from 'next/link';
 import TopSection from '@/components/home/TopSection';
 import FeedTabs from '@/components/feed/FeedTabs';
 import FeedList from '@/components/feed/FeedList';
-
-// Helper to format User ID for display
-const formatUserId = (userId: string | undefined): string => {
-  if (!userId) return "Anon #????";
-  return `Anon #${userId.substring(0, 4).toUpperCase()}`;
-};
 
 // Define types for the feed data and tabs
 type FeedSet = {
@@ -153,7 +145,7 @@ export default function Home() {
 
     try {
         // Upload
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
         .from('recordings') 
         .upload(fileName, audioBlob, { cacheControl: '3600', upsert: false });
 
@@ -206,7 +198,7 @@ export default function Home() {
 
     } catch (error: any) {
         console.error("Error during upload/DB insert:", error);
-        setErrorMessage(`Upload failed: ${error.message}`);
+        setErrorMessage(`Upload failed: ${error.message ?? 'Unknown error'}`);
         setAppState('idle'); // Revert to idle on error
     } finally {
       if (uploadingTimerRef.current) clearTimeout(uploadingTimerRef.current);
@@ -386,8 +378,8 @@ export default function Home() {
         }
         // --- End Sync --- 
         
-    } catch (error) {
-        console.error("Voting failed:", error);
+    } catch (error: any) {
+        console.error("Vote failed:", error);
         setFeedError("Vote failed. Please try again."); 
         // Revert optimistic update by refetching
         fetchFeed(false);
@@ -481,7 +473,7 @@ export default function Home() {
 
     } catch (error: any) {
       console.error("Error posting set:", error);
-      setErrorMessage("Failed to post set. Please try again.");
+      setErrorMessage(`Failed to post set. Please try again: ${error.message ?? 'Unknown error'}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -512,7 +504,7 @@ export default function Home() {
 
     } catch (error: any) {
       console.error("Error scratching set database record:", error);
-      setErrorMessage(`Failed to scratch set: ${error.message}`);
+      setErrorMessage(`Failed to scratch set: ${error.message ?? 'Unknown error'}`);
     } finally {
       setIsSubmitting(false);
     }

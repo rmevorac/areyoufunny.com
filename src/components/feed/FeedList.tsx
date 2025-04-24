@@ -1,8 +1,9 @@
 "use client";
 
-import React, { MutableRefObject, useRef } from 'react';
+import React, { useRef } from 'react';
 import FeedItem from './FeedItem'; // Import FeedItem
 import { PlaybackContextProvider } from '@/contexts/PlaybackContext';
+import { User } from '@supabase/supabase-js'; // Import User type
 
 // Re-declare or import FeedSet type
 type FeedSet = {
@@ -19,7 +20,7 @@ type FeedSet = {
 interface FeedListProps {
   sets: FeedSet[];
   handleVote: (setId: string, voteValue: 1 | -1) => void;
-  currentUser: any; // Pass current user to FeedItem
+  currentUser: User | null; // Use specific type for currentUser
   showInitialLoadIndicator: boolean;
   showMoreLoadIndicator: boolean;
   feedError: string | null;
@@ -35,8 +36,8 @@ const FeedList: React.FC<FeedListProps> = ({
   feedError,
   hasMore
 }) => {
-  // Observer target ref now managed internally
-  const observerTarget = useRef<HTMLDivElement>(null);
+  // Observer target ref is not used internally here anymore
+  // const observerTarget = useRef<HTMLDivElement>(null);
 
   return (
     <div>
@@ -54,17 +55,12 @@ const FeedList: React.FC<FeedListProps> = ({
                           set={set} 
                           handleVote={handleVote} 
                           currentUser={currentUser}
-                          // No ref passed here anymore
                       />
                   ))}
               </ul>
           </PlaybackContextProvider>
       )}
       
-      {/* Observer Target Element */} 
-      {/* Render this invisible div only if there are more items to load */} 
-      {hasMore && sets.length > 0 && <div ref={observerTarget} style={{ height: '1px' }} />} 
-
       {/* No sets message - Adjust text color */}
       {!showInitialLoadIndicator && !feedError && sets.length === 0 && (
          <p className="text-center text-gray-700 py-4">No sets found for this category.</p>

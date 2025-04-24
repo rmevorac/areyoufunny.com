@@ -2,6 +2,7 @@
 
 import React from 'react';
 import AudioPlayer from '@/components/audio/AudioPlayer';
+import { User } from '@supabase/supabase-js'; // Import User type if not already
 // import { ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/24/solid';
 
 // Define type for a single set item (matching page.tsx FeedSet)
@@ -26,7 +27,7 @@ const formatUserId = (userId: string | undefined): string => {
 interface FeedItemProps {
   set: FeedSet;
   handleVote: (setId: string, voteValue: 1 | -1) => void;
-  currentUser: any; // Pass current user to disable buttons if needed
+  currentUser: User | null;
 }
 
 const FeedItem: React.FC<FeedItemProps> = ({ set, handleVote, currentUser }) => {

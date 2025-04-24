@@ -1,7 +1,6 @@
 "use client";
 
 import React from 'react';
-import Link from 'next/link';
 import { User } from '@supabase/supabase-js';
 import RecordingInterface from '@/components/recording/RecordingInterface';
 import AudioPlayer from '@/components/audio/AudioPlayer';
@@ -115,9 +114,9 @@ const TopSection: React.FC<TopSectionProps> = ({
     case 'limitReached':
       return (
         <div className="text-center w-full pt-16">
-          <h1 className="text-5xl font-bold mb-4">You think you're funny?</h1>
+          <h1 className="text-5xl font-bold mb-4">You think you&apos;re funny?</h1>
           <p className="text-lg text-gray-600 mb-2">
-            Test your stand-up with 1 minute on the mic. No crowd, just you
+            Test your stand-up chops with 1 minute on the mic. No crowd, just you
             and your best material.
           </p>
           <p className="text-lg text-gray-600 mb-8">
@@ -133,9 +132,9 @@ const TopSection: React.FC<TopSectionProps> = ({
     default:
       return (
         <div className="text-center w-full pt-16">
-          <h1 className="text-5xl font-bold mb-4">You think you're funny?</h1>
+          <h1 className="text-5xl font-bold mb-4">You think you&apos;re funny?</h1>
           <p className="text-lg text-gray-600 mb-2">
-            Test your stand-up with 1 minute on the mic. No crowd, just you
+            Test your stand-up chops with 1 minute on the mic. No crowd, just you
             and your best material.
           </p>
           <p className="text-lg text-gray-600 mb-8">

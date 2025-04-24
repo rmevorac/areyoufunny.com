@@ -19,24 +19,19 @@ const CountdownDisplay: React.FC<CountdownDisplayProps> = ({ initialCount, onCou
         const nextCountdown = prevCountdown - 1;
         if (nextCountdown <= 0) {
           clearInterval(intervalId);
-          // REMOVE onCountdownComplete() call from here
-          return 0; // Just update state
+          return 0;
         }
         return nextCountdown;
       });
     }, 1000);
     return () => clearInterval(intervalId);
-    // Dependency array should ideally just be initialCount if it could change, 
-    // but for a countdown, it usually doesn't need deps once started.
-    // Let's remove onCountdownComplete from here.
-  }, []); // Run once on mount or if initialCount changed (add if needed)
+  }, [countdown]);
 
   // Effect to call the parent callback *after* state updates
   useEffect(() => {
     if (countdown === 0) {
       onCountdownComplete();
     }
-    // Depend on countdown and the callback prop
   }, [countdown, onCountdownComplete]);
 
   return (

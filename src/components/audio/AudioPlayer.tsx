@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, MouseEvent, TouchEvent } from 'react';
 import { usePlaybackContext } from '@/contexts/PlaybackContext'; // Import the context hook
 
 interface AudioPlayerProps {
@@ -30,19 +30,16 @@ const waveformBarHeights = [
 
 // Function to generate SVG path data from heights
 const generatePathData = (heights: number[], maxSvgHeight: number): string => {
-  const width = heights.length;
   let path = `M 0 ${maxSvgHeight}`; // Start at bottom-left
   heights.forEach((h, i) => {
     const barHeight = Math.max(1, h); // Ensure minimum visible height
     const y = maxSvgHeight - barHeight;
-    // Draw rectangle-like shape for each bar for better visual separation
+    path += ` M ${i} ${maxSvgHeight}`; 
     path += ` L ${i} ${y}`;        // Line to top-left
     path += ` L ${i + 0.8} ${y}`;  // Line to top-right (0.8 controls bar width)
     path += ` L ${i + 0.8} ${maxSvgHeight}`; // Line down to bottom-right
-    path += ` L ${i + 1} ${maxSvgHeight}`; // Line to next bar's bottom-left (creates gap)
+    path += ` Z`; 
   });
-  // Close the overall shape if needed, though filling works per bar here
-  // path += ` L ${width} ${maxSvgHeight} Z`; // Might not be needed with rect approach
   return path;
 };
 
@@ -182,17 +179,11 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, createdAt, durationMs })
     setIsPlaying(willPlay);
   }, [isPlaying, src, currentlyPlayingSrc, setCurrentlyPlayingSrc]); // Add context dependencies
 
-  const handleProgressChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newTime = parseFloat(event.target.value);
-    setCurrentTime(newTime); // Update UI immediately
-  };
-
-  const handleSeek = (event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+  const handleSeek = (event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement> | globalThis.MouseEvent | globalThis.TouchEvent) => {
     if (!waveformContainerRef.current || duration === null || duration <= 0) return;
 
     const rect = waveformContainerRef.current.getBoundingClientRect();
-    // Use clientX for mouse events, use touch position for touch events
-    const clientX = 'touches' in event ? event.touches[0].clientX : event.clientX;
+    const clientX = 'touches' in event ? (event as React.TouchEvent<HTMLDivElement> | globalThis.TouchEvent).touches[0].clientX : (event as React.MouseEvent<HTMLDivElement> | globalThis.MouseEvent).clientX;
     const offsetX = clientX - rect.left;
     const percentage = Math.max(0, Math.min(1, offsetX / rect.width));
     const newTime = percentage * duration;
@@ -200,35 +191,33 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, createdAt, durationMs })
     if (audioRef.current) {
         audioRef.current.currentTime = newTime;
     }
-    setCurrentTime(newTime); // Update UI immediately
+    setCurrentTime(newTime);
   };
 
   const handleWaveformMouseDown = (event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
       setIsSeeking(true);
-      // Immediately seek on mouse down/touch start for better responsiveness
       handleSeek(event);
-      
-      const handleMouseMove = (moveEvent: MouseEvent | TouchEvent) => {
-        handleSeek(moveEvent as any); // Type assertion needed for unified handling
+
+      const handleMouseMove = (moveEvent: globalThis.MouseEvent | globalThis.TouchEvent) => {
+        handleSeek(moveEvent);
       };
 
       const handleMouseUp = () => {
         setIsSeeking(false);
-        window.removeEventListener('mousemove', handleMouseMove as any);
+        window.removeEventListener('mousemove', handleMouseMove as EventListener);
         window.removeEventListener('mouseup', handleMouseUp);
-        window.removeEventListener('touchmove', handleMouseMove as any);
+        window.removeEventListener('touchmove', handleMouseMove as EventListener);
         window.removeEventListener('touchend', handleMouseUp);
       };
 
-      // Add listeners to window for dragging outside the element
-      window.addEventListener('mousemove', handleMouseMove as any);
+      window.addEventListener('mousemove', handleMouseMove as EventListener);
       window.addEventListener('mouseup', handleMouseUp);
-      // Add touch listeners
-      window.addEventListener('touchmove', handleMouseMove as any);
+      window.addEventListener('touchmove', handleMouseMove as EventListener);
       window.addEventListener('touchend', handleMouseUp);
   };
 
   const progressPercentage = (currentTime / (duration ?? 1)) * 100;
+  const clipPathId = useCallback(() => `clipPath-${src.replace(/[^a-zA-Z0-9]/g, '')}`, [src]);
 
   return (
     <div className="bg-gray-100 p-3 rounded-lg shadow w-full mx-auto my-2">
@@ -265,8 +254,8 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, createdAt, durationMs })
             className="absolute inset-0 pointer-events-none"
           >
             <defs>
-              <clipPath id={`clipPath-${src}`}>
-                <rect x="0" y="0" width={`${progressPercentage}%`} height={SVG_VIEWBOX_HEIGHT} />
+              <clipPath id={clipPathId()}>
+                <rect x="0" y="0" width={`${Math.min(100, progressPercentage)}%`} height={SVG_VIEWBOX_HEIGHT} />
               </clipPath>
             </defs>
 
@@ -278,7 +267,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, createdAt, durationMs })
             <path 
               d={waveformPathData}
               fill="#EF4444"
-              clipPath={`url(#clipPath-${src})`}
+              clipPath={`url(#${clipPathId()})`}
             />
           </svg>
         </div>

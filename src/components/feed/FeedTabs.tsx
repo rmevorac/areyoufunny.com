@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, MutableRefObject } from 'react';
+import React, { MutableRefObject } from 'react';
 
 // Define types needed within this component
 type ActiveTab = 'Top' | 'Worst' | 'New';

@@ -198,7 +198,7 @@ const RecordingInterface: React.FC<RecordingInterfaceProps> = ({ targetDurationM
           setShowPreparingMessage(true); 
       }, 2000); 
 
-      startRecording().catch((err) => {
+      startRecording().catch((err: any) => {
          console.error("Error during startRecording triggered by countdown completion:", err);
          setIsPreparing(false); 
          if (preparingTimerRef.current) clearTimeout(preparingTimerRef.current); 
@@ -215,8 +215,6 @@ const RecordingInterface: React.FC<RecordingInterfaceProps> = ({ targetDurationM
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run only once on unmount
-
-  const scale = 1 + audioLevel * 0.5; 
 
   return (
     <div className="flex flex-col items-center justify-center p-4 bg-gray-100 rounded-lg text-gray-900 w-full max-w-md mx-auto space-y-4 min-h-[200px]">
