@@ -462,14 +462,12 @@ export default function Home() {
       }
 
       console.log(`Set ${lastSetData.id} successfully posted.`);
-      // Optionally update UI further, e.g., show a persistent success message
-      // or change appState? For now, keep appState as 'finished'
-      // but maybe disable the 'Post' button after success.
-      // We can add a new field to lastSetData like `isPosted: true` if needed.
-      alert("Set posted successfully!"); // Simple feedback for now
-      // How to disable button? We can modify lastSetData state, or add another state.
-      // Simplest for now might be to clear lastSetData so buttons disappear,
-      // though this prevents further scratching. Let's keep it for now.
+      // Clear lastSetData to remove/disable Post/Scratch buttons
+      setLastSetData(null);
+      // Go back to idle state to allow new recording
+      setAppState('idle'); 
+      
+      alert("Set posted successfully!"); // Simple feedback for now - consider a toast/snackbar
 
     } catch (error) {
       console.error("Error posting set:", error);
