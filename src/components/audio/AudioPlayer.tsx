@@ -5,7 +5,6 @@ import { usePlaybackContext } from '@/contexts/PlaybackContext'; // Import the c
 
 interface AudioPlayerProps {
   src: string;
-  createdAt: string; // Expecting ISO string or date object string representation
   durationMs: number; // Known duration in milliseconds from DB
 }
 
@@ -35,7 +34,7 @@ const generatePathData = (heights: number[], maxSvgHeight: number): string => {
 const SVG_VIEWBOX_HEIGHT = 20; // Max height in SVG coordinate system
 const waveformPathData = generatePathData(waveformBarHeights, SVG_VIEWBOX_HEIGHT);
 
-const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, createdAt, durationMs }) => {
+const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, durationMs }) => {
   // Get context state and setter
   const { currentlyPlayingSrc, setCurrentlyPlayingSrc } = usePlaybackContext();
 
