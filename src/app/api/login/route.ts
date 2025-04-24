@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 
 // Name for the authentication cookie
 const AUTH_COOKIE_NAME = 'site-auth';
