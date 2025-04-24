@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     if (password === sitePassword) {
       // Passwords match - create response first
-      const response = NextResponse.redirect(new URL('/', request.url)); 
+      const response = NextResponse.redirect(new URL('/', request.url), { status: 303 }); 
       
       // Set the cookie on the response object
       response.cookies.set(AUTH_COOKIE_NAME, 'true', {
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       console.log('Login failed: Incorrect password.');
       const loginUrl = new URL('/login', request.url);
       loginUrl.searchParams.set('error', 'Incorrect password');
-      return NextResponse.redirect(loginUrl);
+      return NextResponse.redirect(loginUrl, { status: 303 });
     }
   } catch (error) {
     console.error('Login API error:', error);
