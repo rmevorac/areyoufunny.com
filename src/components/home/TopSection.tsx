@@ -3,9 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { User } from '@supabase/supabase-js';
 import RecordingInterface from '@/components/recording/RecordingInterface';
-import AudioPlayer from '@/components/audio/AudioPlayer';
 import Button from '@/components/ui/Button';
-import { PlaybackContextProvider } from '@/contexts/PlaybackContext';
 import type { AppState } from '@/app/page';
 
 interface TopSectionProps {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { User } from '@supabase/supabase-js';
@@ -37,12 +37,18 @@ export default function Header() {
       } else {
         console.log(`Header: No profile found for user ID: ${userId} (data was null).`);
       }
-    } catch (e: any) {
-      console.error('Header: Exception caught in fetchProfileAndScore:', e.message, e.stack);
+    } catch (e: unknown) {
+      let errorMessage = 'Exception caught in fetchProfileAndScore';
+      let errorStack = undefined;
+      if (e instanceof Error) {
+        errorMessage = e.message;
+        errorStack = e.stack;
+      }
+      console.error('Header: Exception caught in fetchProfileAndScore:', errorMessage, errorStack);
     } finally {
       console.log('Header: fetchProfileAndScore finished (finally block executed).');
     }
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
     console.log("Header: useEffect initiated. Setting authLoading true, initialAuthEventReceived false.");
@@ -75,7 +81,7 @@ export default function Header() {
       console.log('Header: Unsubscribing auth listener');
       authListener?.subscription?.unsubscribe();
     };
-  }, [supabase, fetchProfileAndScore]);
+  }, [fetchProfileAndScore]);
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();

@@ -120,7 +120,7 @@ export default function Home() {
         setNextPostAvailableAtUTC(null);
       }
     }
-  }, [user, supabase, appState, setAppState, setErrorMessage, setNextPostAvailableAtUTC]);
+  }, [user, appState, setAppState, setErrorMessage, setNextPostAvailableAtUTC]);
 
   // Auth effect
   useEffect(() => {
@@ -196,7 +196,7 @@ export default function Home() {
         setNextPostAvailableAtUTC(null); // Clear countdown time
       }
     }
-  }, [user, isAuthLoading, checkUserPostLimit, appState, setAppState, setNextPostAvailableAtUTC]); // Added appState, setAppState, setNextPostAvailableAtUTC for the reset logic
+  }, [user, isAuthLoading, checkUserPostLimit, appState, setAppState, setNextPostAvailableAtUTC]); // appState was already there, ensuring it's correct
   // Note: checkUserPostLimit itself depends on appState for one of its conditions. This circular dependency is managed by useCallback for checkUserPostLimit
   // and by the conditional logic within this useEffect and checkUserPostLimit to prevent infinite loops.
 
@@ -327,9 +327,13 @@ export default function Home() {
       }
       // --- End of automatic upvote ---
 
-    } catch (err: any) {
-        console.error("Error during recording complete process:", err.message);
-        setErrorMessage(err.message || 'An unexpected error occurred during upload or set creation.');
+    } catch (err: unknown) {
+        let errorMessage = 'An unexpected error occurred during upload or set creation.';
+        if (err instanceof Error) {
+            errorMessage = err.message;
+        }
+        console.error("Error during recording complete process:", errorMessage);
+        setErrorMessage(errorMessage);
     } finally {
         if (uploadingTimerRef.current) {
             clearTimeout(uploadingTimerRef.current);
@@ -423,9 +427,13 @@ export default function Home() {
         setHasMore(newHasMoreItems);
         setOffset(currentOffsetForQuery + currentPageDisplaySets.length);
 
-      } catch (err: any) {
-        console.error('Error fetching feed:', err);
-        setFeedError(`Failed to load feed: ${err.message || "An unknown error occurred"}`);
+      } catch (err: unknown) {
+        let feedErrorMessage = "An unknown error occurred";
+        if (err instanceof Error) {
+            feedErrorMessage = err.message;
+        }
+        console.error('Error fetching feed:', feedErrorMessage);
+        setFeedError(`Failed to load feed: ${feedErrorMessage}`);
         setHasMore(false);
       } finally {
         if (initialLoadTimerRef.current) clearTimeout(initialLoadTimerRef.current);
@@ -442,7 +450,8 @@ export default function Home() {
     await doFetchSets(offset, hasMore);
 
     // useCallback wrapper for fetchFeed. Deps only include things that define *what* to fetch.
-  }, [activeTab, user, supabase, PAGE_LIMIT]); // offset and hasMore are NOT dependencies here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps 
+  }, [activeTab, user, PAGE_LIMIT]); // offset and hasMore are NOT dependencies here. supabase also removed.
 
   // Effect to fetch feed when tab changes, user changes, OR auth loading finishes
   useEffect(() => {

@@ -2,12 +2,11 @@ export default function PrivacyPage() {
   return (
     <div className="container mx-auto px-4 py-8 text-gray-800">
       <h1 className="text-3xl font-bold mb-6 text-center text-gray-900">Privacy Policy</h1>
-      {/* TODO: Update placeholder effective date */}
       <p className="mb-6 text-sm text-gray-600 text-center">
         Effective Date: May 18, 2025
       </p>
       <p className="mb-6 text-lg">
-        At areufunny.com (the "Site"), we value your privacy. This policy outlines what information we collect and how we use it.
+        At areufunny.com (the &quot;Site&quot;), we value your privacy. This policy outlines what information we collect and how we use it.
       </p>
 
       <div className="space-y-6">
@@ -42,14 +41,14 @@ export default function PrivacyPage() {
           <h2 className="text-2xl font-semibold mb-3 text-gray-900">3. Cookies and Tracking</h2>
           {/* TODO: Consider making this section more specific if cookies are actively used (e.g., for session, analytics, cookie banner consent) */}
           <p className="mb-4 leading-relaxed">
-            We may use cookies and similar tracking technologies to enhance user experience, analyze site traffic, and for other operational purposes.
+            We may use essentialcookies and similar tracking technologies to enhance user experience, analyze site traffic, and for other operational purposes.
           </p>
         </section>
 
         <section>
           <h2 className="text-2xl font-semibold mb-3 text-gray-900">4. Your Rights and Choices</h2>
           <p className="mb-4 leading-relaxed">
-            You can opt out of marketing communications at any time by clicking the "unsubscribe" link provided in our emails or by contacting us directly.
+            You can opt out of marketing communications at any time by clicking the &quot;unsubscribe&quot; link provided in our emails or by contacting us directly.
           </p>
         </section>
 
@@ -75,7 +74,6 @@ export default function PrivacyPage() {
         </section>
       </div>
 
-      {/* TODO: Update placeholder last updated date */}
       <p className="mt-10 text-sm text-gray-500 text-center">
         Last updated: May 18, 2025
       </p>

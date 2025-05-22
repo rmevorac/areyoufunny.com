@@ -31,7 +31,7 @@ const CookieBanner: React.FC = () => {
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-gray-800 text-white p-4 shadow-lg z-50 flex flex-col sm:flex-row justify-between items-center">
       <p className="text-sm mb-3 sm:mb-0 sm:mr-4">
-        Areufunny.com uses cookies and similar tracking technologies to enhance your browsing experience, analyze site traffic, and personalize content.
+        Areufunny.com uses essentialcookies and similar tracking technologies to enhance your browsing experience, analyze site traffic, and personalize content.
         {/* Optional: Add a link to your privacy policy */}
         <a href="/privacy" className="underline hover:text-gray-300 ml-1">Learn more</a>
       </p>

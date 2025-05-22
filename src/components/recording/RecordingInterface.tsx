@@ -265,7 +265,6 @@ const RecordingInterface: React.FC<RecordingInterfaceProps> = ({ targetDurationM
         <CountdownDisplay
           initialCount={COUNTDOWN_SECONDS}
           onCountdownComplete={handleCountdownComplete}
-          onCancel={handleCancel} 
         />
       )}
 

@@ -1,15 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import Button from '@/components/ui/Button';
 
 interface CountdownDisplayProps {
   initialCount: number;
   onCountdownComplete: () => void;
-  onCancel: () => void;
 }
 
-const CountdownDisplay: React.FC<CountdownDisplayProps> = ({ initialCount, onCountdownComplete, onCancel }) => {
+const CountdownDisplay: React.FC<CountdownDisplayProps> = ({ initialCount, onCountdownComplete }) => {
   const [countdown, setCountdown] = useState(initialCount);
 
   // Effect to handle the interval timer for decrementing

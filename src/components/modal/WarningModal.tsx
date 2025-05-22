@@ -41,7 +41,7 @@ const WarningModal: React.FC<WarningModalProps> = ({
             Cancel
           </Button>
           <Button onClick={onConfirm} variant="warning">
-            Fuck it, let's roll
+            Fuck it, let&apos;s roll
           </Button>
         </div>
       </div>

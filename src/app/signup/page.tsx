@@ -1,14 +1,17 @@
 'use client';
 
-import { useState, Suspense, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, Suspense, useCallback } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
+import { supabase } from '@/lib/supabaseClient';
 
 // Debounce function
-function debounce<F extends (...args: any[]) => any>(func: F, waitFor: number) {
+function debounce<T extends unknown[], R>(
+  func: (...args: T) => R, 
+  waitFor: number
+) {
   let timeout: ReturnType<typeof setTimeout> | null = null;
 
-  const debounced = (...args: Parameters<F>) => {
+  const debounced = (...args: T) => {
     if (timeout !== null) {
       clearTimeout(timeout);
       timeout = null;
@@ -16,7 +19,7 @@ function debounce<F extends (...args: any[]) => any>(func: F, waitFor: number) {
     timeout = setTimeout(() => func(...args), waitFor);
   };
 
-  return debounced as (...args: Parameters<F>) => void;
+  return debounced as (...args: T) => void;
 }
 
 function SignupForm() {
