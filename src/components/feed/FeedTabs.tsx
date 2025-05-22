@@ -23,9 +23,9 @@ const FeedTabs: React.FC<FeedTabsProps> = ({
 }) => {
   // Define tab labels and their display text
   const tabData: { key: ActiveTab; displayText: string }[] = [
-    { key: 'Top', displayText: "Top Pops Today" },
-    { key: 'Worst', displayText: "Bad Bombs Today" },
-    { key: 'New', displayText: "New" },
+    { key: 'New', displayText: "New Sets" },
+    { key: 'Top', displayText: "Top Pops" },
+    { key: 'Worst', displayText: "Biggest Bombs" },
   ];
 
   return (

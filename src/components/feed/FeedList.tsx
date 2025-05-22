@@ -15,6 +15,7 @@ type FeedSet = {
   up_votes: number;
   down_votes: number;
   user_vote: 1 | -1 | null; 
+  waveform_peaks: number[] | null;
 };
 
 interface FeedListProps {
@@ -36,8 +37,21 @@ const FeedList: React.FC<FeedListProps> = ({
   feedError,
   hasMore
 }) => {
-  // Observer target ref is not used internally here anymore
-  // const observerTarget = useRef<HTMLDivElement>(null);
+  // Create a new array with unique sets based on id to prevent React key errors
+  const uniqueSetsMap = new Map<string, FeedSet>();
+  sets.forEach(set => {
+    if (!uniqueSetsMap.has(set.id)) {
+      uniqueSetsMap.set(set.id, set);
+    } else {
+      // This log is important! It means the parent (page.tsx) is still sending duplicates.
+      console.warn(`FeedList.tsx: Duplicate set ID received and will be filtered: ${set.id}. Original sets prop length: ${sets.length}`);
+    }
+  });
+  const uniqueSets = Array.from(uniqueSetsMap.values());
+
+  if (sets.length > 0 && sets.length !== uniqueSets.length) {
+      console.warn(`FeedList.tsx: Rendered ${uniqueSets.length} unique sets out of ${sets.length} received due to duplicate IDs in props.`);
+  }
 
   return (
     <div>
@@ -46,10 +60,10 @@ const FeedList: React.FC<FeedListProps> = ({
       {feedError && <p className="text-center text-red-600 py-4">{feedError}</p>}
       
       {/* Feed List Content */} 
-      {sets.length > 0 && !feedError && (
+      {uniqueSets.length > 0 && !feedError && (
           <PlaybackContextProvider>
               <ul className="space-y-4">
-                  {sets.map((set) => (
+                  {uniqueSets.map((set) => (
                       <FeedItem 
                           key={set.id} 
                           set={set} 
@@ -62,13 +76,13 @@ const FeedList: React.FC<FeedListProps> = ({
       )}
       
       {/* No sets message - Adjust text color */}
-      {!showInitialLoadIndicator && !feedError && sets.length === 0 && (
+      {!showInitialLoadIndicator && !feedError && uniqueSets.length === 0 && (
          <p className="text-center text-gray-700 py-4">No sets found for this category.</p>
       )}
 
       {/* More Loading / End of list indicators - Adjust text colors */} 
       {showMoreLoadIndicator && <p className="text-center text-gray-600 py-4">Loading more...</p>}
-      {!hasMore && !showInitialLoadIndicator && !showMoreLoadIndicator && sets.length > 0 && <p className="text-center text-gray-700 py-4">No more sets.</p>}
+      {!hasMore && !showInitialLoadIndicator && !showMoreLoadIndicator && uniqueSets.length > 0 && <p className="text-center text-gray-700 py-4">No more sets.</p>}
     </div>
   );
 };

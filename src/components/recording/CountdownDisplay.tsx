@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Button from '@/components/ui/Button';
 
 interface CountdownDisplayProps {
   initialCount: number;
@@ -47,14 +48,6 @@ const CountdownDisplay: React.FC<CountdownDisplayProps> = ({ initialCount, onCou
       >
         {countdown}
       </div>
-
-      {/* Cancel Button - Below number, standard styling */}
-      <button 
-        onClick={onCancel} 
-        className="mt-6 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-red-500"
-      >
-        Cancel
-      </button>
     </div>
   );
 };

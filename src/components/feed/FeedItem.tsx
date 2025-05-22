@@ -7,16 +7,18 @@ import { User } from '@supabase/supabase-js'; // Import User type if not already
 
 // Define type for a single set item (matching page.tsx FeedSet)
 // Re-declare or import if shared
-type FeedSet = {
+interface FeedSet {
   id: string;
-  created_at: string;
   audio_url: string;
+  created_at: string;
   duration_ms: number;
-  user_id: string;
   up_votes: number;
   down_votes: number;
-  user_vote: 1 | -1 | null; 
-};
+  user_id: string; // User who posted the set
+  username?: string; // Username of the user who posted the set
+  user_vote: 1 | -1 | null; // Current logged-in user's vote on this set
+  waveform_peaks: number[] | null;
+}
 
 // Helper (can be moved to a utils file)
 const formatUserId = (userId: string | undefined): string => {
@@ -31,7 +33,32 @@ interface FeedItemProps {
 }
 
 const FeedItem: React.FC<FeedItemProps> = ({ set, handleVote, currentUser }) => {
+  // Enhanced Diagnostic Log
+  console.log(
+    `FeedItem RENDER - ID: ${set.id}, ` +
+    `Received user_vote: ${set.user_vote}, ` +
+    `Received Up: ${set.up_votes}, Received Down: ${set.down_votes}, ` +
+    `currentUser: ${currentUser ? currentUser.id : 'null'}`
+  );
+
   const score = set.up_votes - set.down_votes;
+  const isUpvoted = set.user_vote === 1;
+  const isDownvoted = set.user_vote === -1;
+
+  const upvoteButtonClasses = `p-1 rounded disabled:opacity-50 text-xl ${
+    isUpvoted 
+      ? 'bg-green-100 text-green-600' 
+      : 'text-gray-500 hover:bg-green-50 hover:text-green-600'
+  }`;
+
+  const downvoteButtonClasses = `p-1 rounded disabled:opacity-50 text-xl ${
+    isDownvoted
+      ? 'bg-red-100 text-red-600'
+      : 'text-gray-500 hover:bg-red-50 hover:text-red-600'
+  }`;
+
+  const displayUsername = set.username || formatUserId(set.user_id);
+
   return (
     <li className="bg-white border border-gray-200 p-3 rounded-lg shadow flex justify-between items-center gap-4">
       
@@ -43,12 +70,13 @@ const FeedItem: React.FC<FeedItemProps> = ({ set, handleVote, currentUser }) => 
                   src={set.audio_url} 
                   createdAt={set.created_at} 
                   durationMs={set.duration_ms}
+                  waveformPeaks={set.waveform_peaks}
               />
           </div>
           {/* User Info - Below player, remove flex properties, add margin */}
           <div className="mt-1"> 
             <p className="text-xs font-medium text-gray-600"> {/* Adjusted size/color */} 
-              {formatUserId(set.user_id)}
+              {displayUsername}
             </p>
            </div>
       </div>
@@ -57,9 +85,7 @@ const FeedItem: React.FC<FeedItemProps> = ({ set, handleVote, currentUser }) => 
       <div className="flex flex-col items-center space-y-1 flex-shrink-0">
           <button 
               onClick={() => handleVote(set.id, 1)} 
-              className={`p-1 rounded disabled:opacity-50 text-xl 
-                  ${set.user_vote === 1 ? 'bg-green-100' : 'hover:bg-green-50'} 
-                  ${set.user_vote === 1 ? 'text-green-600' : 'text-gray-500 hover:text-green-600'}`}
+              className={upvoteButtonClasses}
               title="Upvote (Celebrate!)"
               aria-label="Upvote (Celebrate!)"
               disabled={!currentUser}
@@ -71,9 +97,7 @@ const FeedItem: React.FC<FeedItemProps> = ({ set, handleVote, currentUser }) => 
           </span>
           <button 
               onClick={() => handleVote(set.id, -1)}
-              className={`p-1 rounded disabled:opacity-50 text-xl 
-                  ${set.user_vote === -1 ? 'bg-red-100' : 'hover:bg-red-50'} 
-                  ${set.user_vote === -1 ? 'text-red-600' : 'text-gray-500 hover:text-red-600'}`}
+              className={downvoteButtonClasses}
               title="Downvote (Bomb)" 
               aria-label="Downvote (Bomb)"
               disabled={!currentUser}

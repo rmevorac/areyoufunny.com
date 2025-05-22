@@ -1,53 +1,75 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { User } from '@supabase/supabase-js';
 import RecordingInterface from '@/components/recording/RecordingInterface';
 import AudioPlayer from '@/components/audio/AudioPlayer';
 import Button from '@/components/ui/Button';
 import { PlaybackContextProvider } from '@/contexts/PlaybackContext';
-
-// Re-declare types needed within this component
-type AppState = 'idle' | 'recording' | 'uploading' | 'finished' | 'limitReached';
-type LastSetData = {
-    id: string;
-    url: string; 
-    createdAt: string; 
-    durationMs: number;
-    fileName: string; 
-    isPosted?: boolean; // Added optional flag
-} | null;
+import type { AppState } from '@/app/page';
 
 interface TopSectionProps {
-  appState: AppState;
+  appState: AppState; // This will now use the imported AppState
   user: User | null;
-  lastSetData: LastSetData;
   errorMessage: string | null;
   showUploadingIndicator: boolean;
   onStartSet: () => void;
-  onRecordingComplete: (blob: Blob, durationMs: number) => void;
+  onRecordingComplete: (blob: Blob, durationMs: number, waveformPeaks: number[]) => void;
   onCancelCountdown: () => void;
-  onPostSet: () => void;
-  onScratchSet: () => void;
-  isSubmittingPostOrScratch: boolean;
+  nextPostAvailableAtUTC?: string | null;
 }
+
+// Helper function to format remaining time
+const formatTimeLeft = (timeLeftMs: number): string => {
+  if (timeLeftMs <= 0) return "00:00:00";
+  const totalSeconds = Math.floor(timeLeftMs / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+};
 
 const TopSection: React.FC<TopSectionProps> = ({
   appState,
   user,
-  lastSetData,
   errorMessage,
   showUploadingIndicator,
   onStartSet,
   onRecordingComplete,
   onCancelCountdown,
-  onPostSet,
-  onScratchSet,
-  isSubmittingPostOrScratch,
+  nextPostAvailableAtUTC,
 }) => {
+  const [countdown, setCountdown] = useState<string>("");
 
-  // Internal constant, assuming 60s for now, could be passed as prop later
-  const RECORDING_DURATION_MS = 60000; 
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout | null = null;
+
+    if (appState === 'limitReached' && nextPostAvailableAtUTC) {
+      const calculateTimeLeft = () => {
+        const now = new Date().getTime();
+        const nextPostTime = new Date(nextPostAvailableAtUTC).getTime();
+        const timeLeft = nextPostTime - now;
+
+        if (timeLeft <= 0) {
+          setCountdown("It should be your time to shine again soon!");
+          if (intervalId) clearInterval(intervalId);
+        } else {
+          setCountdown(formatTimeLeft(timeLeft));
+        }
+      };
+
+      calculateTimeLeft();
+      intervalId = setInterval(calculateTimeLeft, 1000);
+    } else {
+      setCountdown("");
+    }
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [appState, nextPostAvailableAtUTC]);
 
   // Display error message prominently if it exists
   if (errorMessage) {
@@ -63,67 +85,32 @@ const TopSection: React.FC<TopSectionProps> = ({
   switch (appState) {
     case 'recording':
       return <RecordingInterface 
-                targetDurationMs={RECORDING_DURATION_MS} 
+                targetDurationMs={60000} 
                 onRecordingComplete={onRecordingComplete} 
                 onCancelCountdown={onCancelCountdown}
               />;
               
     case 'uploading':
-      return showUploadingIndicator ? <p className="text-xl">Uploading your set...</p> : null;
-      
-    case 'finished':
-      if (!lastSetData) {
-        return <p>Loading details...</p>; 
-      }
-      return (
-        <div className="text-center w-full max-w-xl mx-auto flex flex-col items-center space-y-4">
-          <h2 className="text-2xl font-semibold mb-2">Set Recorded!</h2>
-          
-          <div className="w-full">
-              <PlaybackContextProvider>
-                  <AudioPlayer 
-                      src={lastSetData.url} 
-                      createdAt={lastSetData.createdAt} 
-                      durationMs={lastSetData.durationMs}
-                  />
-              </PlaybackContextProvider>
-          </div>
-
-          <div className="flex space-x-4 mt-4">
-              <Button 
-                onClick={onPostSet}
-                disabled={isSubmittingPostOrScratch || lastSetData.isPosted}
-                variant="primary"
-              >
-                {lastSetData.isPosted ? "Posted!" : "Post to Feed"} 
-              </Button>
-              <Button 
-                onClick={onScratchSet}
-                disabled={isSubmittingPostOrScratch}
-                variant="secondary"
-              >
-                Scratch It
-              </Button>
-          </div>
-          <p className="text-sm text-gray-500 mt-2">
-              Posting makes your set public. Scratching deletes it and lets you re-record immediately.
-          </p>
-        </div>
-      );
+      return showUploadingIndicator ? <p className="text-xl">Uploading & Posting your set...</p> : null;
       
     case 'limitReached':
       return (
         <div className="text-center w-full pt-16">
-          <h1 className="text-5xl font-bold mb-4">You think you&apos;re funny?</h1>
+          <h1 className="text-5xl font-bold mb-4">Patience, Grasshopper!</h1>
           <p className="text-lg text-gray-600 mb-2">
-            Test your stand-up with 1 minute on the mic. No crowd, just you
-            and your best material.
+            You&apos;ve dropped your mic for today.
           </p>
-          <p className="text-lg text-gray-600 mb-8">
-            One shot per day.
-          </p>
-          <p className="text-yellow-600 text-xl">
-              (Daily limit currently disabled for testing)
+          {countdown ? (
+            <p className="text-2xl text-red-600 font-mono my-4">
+              Next set in: {countdown}
+            </p>
+          ) : (
+            <p className="text-xl text-gray-700 font-semibold my-4">
+              Come back tomorrow for another go!
+            </p>
+          )}
+          <p className="text-sm text-gray-500">
+            (Daily limit resets at midnight UTC)
           </p>
         </div>
       );
@@ -146,6 +133,9 @@ const TopSection: React.FC<TopSectionProps> = ({
             variant={!user ? 'secondary' : 'primary'}
             className={`${!user ? 'cursor-not-allowed' : '' }`}
           >
+            {/* Consider changing button text if !user means "not logged in" vs. "user state still loading" */}
+            {/* For instance, if user is definitively null (not just loading), a more direct CTA like "Login to Start" might be clearer */}
+            {/* However, current onStartSet logic handles redirecting, so this is a minor UX note */}
             {!user ? 'Loading...' : 'Start Your Set'}
           </Button>
         </div>

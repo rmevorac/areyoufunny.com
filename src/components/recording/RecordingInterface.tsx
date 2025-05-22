@@ -7,10 +7,12 @@ import RecordingTimer from './RecordingTimer';
 
 // Default duration can be defined here or passed as prop if needed
 const COUNTDOWN_SECONDS = 3;
+const SAMPLE_INTERVAL_MS = 150; // How often to generate a new bar for the visualizer
+const LIVE_VISUAL_SENSITIVITY_BOOST = 4.0; // Experiment with this value (e.g., 1.5, 2.0, 2.5)
 
 interface RecordingInterfaceProps {
   targetDurationMs: number; // Receive the target duration from parent
-  onRecordingComplete: (blob: Blob, durationMs: number) => void; // Pass duration back
+  onRecordingComplete: (blob: Blob, durationMs: number, waveformPeaks: number[]) => void; // Pass duration back and waveform peaks
   onCancelCountdown: () => void; // Passed to CountdownDisplay
 }
 
@@ -20,7 +22,7 @@ const RecordingInterface: React.FC<RecordingInterfaceProps> = ({ targetDurationM
   const [showPreparingMessage, setShowPreparingMessage] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [timeLeft, setTimeLeft] = useState(targetDurationMs / 1000);
-  const [audioLevel, setAudioLevel] = useState(0);
+  const [latestSampledPeak, setLatestSampledPeak] = useState<number | null>(null);
   const [micError, setMicError] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -36,34 +38,34 @@ const RecordingInterface: React.FC<RecordingInterfaceProps> = ({ targetDurationM
   const animationFrameRef = useRef<number | null>(null);
   const dataArrayRef = useRef<Uint8Array | null>(null);
   const preparingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const collectedPeaksRef = useRef<number[]>([]);
 
   const stopRecording = useCallback((stoppedByTimeout: boolean = false) => {
-    
-    // 1. Clear precise timeout
     if (preciseTimeoutRef.current) {
         clearTimeout(preciseTimeoutRef.current);
         preciseTimeoutRef.current = null;
     }
 
-    // 2. Calculate actual duration
     let finalDurationMs = targetDurationMs; 
     if (stoppedByTimeout) {
         finalDurationMs = targetDurationMs;
     } else if (startTimeRef.current) {
         const elapsedMs = Date.now() - startTimeRef.current;
         finalDurationMs = Math.min(Math.max(0, Math.round(elapsedMs)), targetDurationMs);
-    } else {
-        // console.warn("stopRecording called (early) but startTimeRef was null...");
-    }
+    } 
     if (startTimeRef.current) startTimeRef.current = null;
-    actualDurationMsRef.current = finalDurationMs;
+    actualDurationMsRef.current = finalDurationMs; // Set this for onstop to use
 
-    // 3. Stop MediaRecorder
+    // If mediaRecorder exists and is recording, stop it. Its onstop will handle the rest.
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
         mediaRecorderRef.current.stop();
+    } else {
+        // If not recording, or recorder doesn't exist, perform immediate cleanup.
+        // This path generally shouldn't result in a valid recording to be completed.
+        // collectedPeaksRef will be cleared in the general cleanup part.
     }
 
-    // 4. Clean up audio context and tracks
+    // General cleanup that happens regardless of how stop was initiated
     if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
@@ -79,31 +81,58 @@ const RecordingInterface: React.FC<RecordingInterfaceProps> = ({ targetDurationM
         streamRef.current = null;
     }
     
-    // 5. Reset component state
     setIsRecording(false);
     setTimeLeft(targetDurationMs / 1000);
-    setAudioLevel(0); 
+    setLatestSampledPeak(null);
     setMicError(null);
+    // Do NOT clear collectedPeaksRef.current here; onstop will handle it after using it.
 
-  }, [targetDurationMs]);
+  }, [targetDurationMs /* Remove onRecordingComplete from here if it's only in onstop */]);
 
-  const updateAudioLevel = useCallback(() => {
+  const updateWaveformData = useCallback(() => {
     if (!analyserRef.current || !dataArrayRef.current) return;
-
-    analyserRef.current.getByteFrequencyData(dataArrayRef.current);
-    
-    let sum = 0;
-    for(let i = 0; i < dataArrayRef.current.length; i++) {
-        sum += dataArrayRef.current[i];
-    }
-    const average = sum / dataArrayRef.current.length;
-    const normalizedLevel = Math.min(1, (average / 255) * 2.5); 
-    setAudioLevel(normalizedLevel);
-
-    animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
+    analyserRef.current.getByteTimeDomainData(dataArrayRef.current);
+    animationFrameRef.current = requestAnimationFrame(updateWaveformData);
   }, []);
 
+  // Effect for sampling peak for LIVE visualizer AND collecting peaks for STORAGE
+  useEffect(() => {
+    if (!isRecording) {
+      setLatestSampledPeak(null);
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      if (dataArrayRef.current && dataArrayRef.current.length > 0) {
+        let sumOfAmplitudes = 0;
+        for (let i = 0; i < dataArrayRef.current.length; i++) {
+          const amplitude = Math.abs(dataArrayRef.current[i] - 128); 
+          sumOfAmplitudes += amplitude;
+        }
+        let averageAmplitude = sumOfAmplitudes / dataArrayRef.current.length; 
+        
+        // Boost the average amplitude before normalizing
+        averageAmplitude = averageAmplitude * LIVE_VISUAL_SENSITIVITY_BOOST;
+
+        // Normalize boosted average amplitude (0-128 range effectively expanded by boost)
+        // Cap the raw boosted average at 128 before normalizing to prevent exceeding 100% after normalization
+        const cappedBoostedAverage = Math.min(averageAmplitude, 128);
+        const normalizedValue = Math.min(100, Math.round((cappedBoostedAverage / 128) * 100)); 
+        
+        setLatestSampledPeak(normalizedValue); 
+        collectedPeaksRef.current.push(normalizedValue);
+      } else {
+        const silentNormalizedValue = 0; 
+        setLatestSampledPeak(silentNormalizedValue);
+        collectedPeaksRef.current.push(silentNormalizedValue);
+      }
+    }, SAMPLE_INTERVAL_MS);
+
+    return () => clearInterval(intervalId);
+  }, [isRecording]);
+
   const startRecording = useCallback(async () => {
+    collectedPeaksRef.current = []; // This is the correct place to clear for a NEW recording
     setIsPreparing(false);
     if (preparingTimerRef.current) {
       clearTimeout(preparingTimerRef.current);
@@ -123,7 +152,7 @@ const RecordingInterface: React.FC<RecordingInterfaceProps> = ({ targetDurationM
       dataArrayRef.current = new Uint8Array(bufferLength);
       sourceRef.current = audioContextRef.current.createMediaStreamSource(stream);
       sourceRef.current.connect(analyserRef.current);
-      animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
+      animationFrameRef.current = requestAnimationFrame(updateWaveformData);
 
       mediaRecorderRef.current = new MediaRecorder(stream);
       audioChunksRef.current = [];
@@ -135,11 +164,19 @@ const RecordingInterface: React.FC<RecordingInterfaceProps> = ({ targetDurationM
         }
       };
 
+      // This is the primary place to call onRecordingComplete
       mediaRecorderRef.current.onstop = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        const finalDuration = actualDurationMsRef.current ?? targetDurationMs;
-        onRecordingComplete(audioBlob, finalDuration);
+        const finalDuration = actualDurationMsRef.current ?? targetDurationMs; 
+        
+        // Critical Log: See what collectedPeaksRef contains *at the moment onstop fires*
+        console.log("[onstop] FIRING. Collected peaks at this moment:", JSON.stringify(collectedPeaksRef.current));
+        onRecordingComplete(audioBlob, finalDuration, collectedPeaksRef.current);
+        
+        // console.log("[onstop] Clearing peaks AFTER sending. Length was:", collectedPeaksRef.current.length);
+        collectedPeaksRef.current = []; 
         actualDurationMsRef.current = null;
+        audioChunksRef.current = []; 
       };
 
       startTimeRef.current = Date.now();
@@ -161,7 +198,7 @@ const RecordingInterface: React.FC<RecordingInterfaceProps> = ({ targetDurationM
       if (preparingTimerRef.current) clearTimeout(preparingTimerRef.current);
       setShowPreparingMessage(false);
     }
-  }, [onRecordingComplete, stopRecording, targetDurationMs, updateAudioLevel]);
+  }, [onRecordingComplete, stopRecording, targetDurationMs, updateWaveformData]);
 
   // Effect for Timer Logic
   useEffect(() => {
@@ -221,7 +258,7 @@ const RecordingInterface: React.FC<RecordingInterfaceProps> = ({ targetDurationM
   }, []); // Run only once on unmount
 
   return (
-    <div className="flex flex-col items-center justify-center p-4 bg-gray-100 rounded-lg text-gray-900 w-full max-w-md mx-auto space-y-4 min-h-[200px]">
+    <div className="flex flex-col items-center justify-center p-4 rounded-lg text-gray-900 w-full max-w-md mx-auto space-y-4 min-h-[200px]">
       {micError && <p className="text-red-600 mb-4">{micError}</p>}
 
       {isCountingDown && !micError && (
@@ -244,8 +281,8 @@ const RecordingInterface: React.FC<RecordingInterfaceProps> = ({ targetDurationM
 
       {isRecording && !micError && (
         <>
-          <RecordingTimer timeLeft={timeLeft} audioLevel={audioLevel} />
-          {timeLeft <= 30 && (
+          <RecordingTimer timeLeft={timeLeft} newAmplitudeSample={latestSampledPeak} />
+          {timeLeft <= 50 && (
             <Button onClick={() => stopRecording(false)} variant="warning" className="mt-2">
               Stop Recording
             </Button>

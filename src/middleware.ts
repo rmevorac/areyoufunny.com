@@ -1,36 +1,94 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 // Remove import for next/headers cookies if not needed elsewhere
 // import { cookies } from 'next/headers'; 
 
-const AUTH_COOKIE_NAME = 'site-auth'; // Should match API route
+// const AUTH_COOKIE_NAME = 'site-auth'; // This is no longer used with Supabase session handling
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  console.log(`[Middleware] Running for path: ${pathname}`); // Log entry
+  // console.log(`[Middleware] Running for path: ${pathname}`);
 
-  // Log cookie presence and value
-  const authCookie = request.cookies.get(AUTH_COOKIE_NAME);
-  console.log(`[Middleware] Auth cookie (${AUTH_COOKIE_NAME}):`, authCookie);
+  // Allow public access to specific paths (e.g., home, content pages)
+  // Add any other paths that should be public without authentication.
+  if (pathname === '/' || pathname.startsWith('/sets')) {
+    return NextResponse.next(); 
+  }
 
-  // 2. If trying to access the login page itself, allow it
-  if (pathname.startsWith('/login')) {
-    console.log('[Middleware] Path is /login, allowing.');
+  // Allow access to auth-related paths, and API routes (implicitly allowed by matcher)
+  if (pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/auth/callback')) {
     return NextResponse.next();
   }
 
-  // 3. If no auth cookie or its value isn't what we expect (e.g., 'true'), redirect
-  if (!authCookie || authCookie.value !== 'true') { 
-    console.log(`[Middleware] No valid auth cookie found for path: ${pathname}, redirecting to /login`);
+  // Create an outgoing response object before invoking Supabase
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          // If the cookie is set, update the request and response cookies
+          request.cookies.set({
+            name,
+            value,
+            ...options,
+          });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          });
+        },
+        remove(name: string, options: CookieOptions) {
+          // If the cookie is removed, update the request and response cookies
+          request.cookies.set({
+            name,
+            value: '',
+            ...options,
+          });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+          });
+        },
+      },
+    }
+  );
+
+  // Refresh session if expired - important to keep session client-side updated
+  const { data: { session } } = await supabase.auth.getSession();
+
+  // If no session (user is not logged in) for any other path, redirect to login page
+  if (!session) {
+    // console.log(`[Middleware] No session, redirecting to /login from ${pathname}`);
     const loginUrl = new URL('/login', request.url);
-    // Add a query param to indicate the original attempted path (optional, for debugging)
-    // loginUrl.searchParams.set('redirectedFrom', pathname);
+    loginUrl.searchParams.set('redirectedFrom', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // 4. If cookie exists and is valid, allow the request to proceed
-  console.log(`[Middleware] Valid auth cookie found for path: ${pathname}, allowing request.`);
-  return NextResponse.next();
+  // console.log(`[Middleware] Session found for ${pathname}, allowing request.`);
+  // If session exists, allow the request to proceed
+  return response; // Return the (potentially modified) response
 }
 
 // See "Matching Paths" below to learn more
@@ -42,9 +100,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     *
-     * This ensures the middleware runs on pages but skips API routes,
-     * static assets, and framework internals.
+     * Explicitly handled public paths like '/', '/sets' will pass through this matcher
+     * and then be allowed by the logic within the middleware function.
      */
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
