@@ -2,7 +2,6 @@
 
 import React, { useState, Suspense, useCallback } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
-import { supabase } from '@/lib/supabaseClient';
 
 // Debounce function
 function debounce<T extends unknown[], R>(

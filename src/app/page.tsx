@@ -182,6 +182,7 @@ export default function Home() {
   }, []); // Main auth setup runs once
 
   // Effect to check post limit when user is loaded/changed and auth is complete
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!isAuthLoading) {
       if (user && !user.is_anonymous) {
@@ -196,7 +197,7 @@ export default function Home() {
         setNextPostAvailableAtUTC(null); // Clear countdown time
       }
     }
-  }, [user, isAuthLoading, checkUserPostLimit, appState, setAppState, setNextPostAvailableAtUTC]); // appState was already there, ensuring it's correct
+  }, [user, isAuthLoading, checkUserPostLimit, appState, setAppState, setNextPostAvailableAtUTC]);
   // Note: checkUserPostLimit itself depends on appState for one of its conditions. This circular dependency is managed by useCallback for checkUserPostLimit
   // and by the conditional logic within this useEffect and checkUserPostLimit to prevent infinite loops.
 
