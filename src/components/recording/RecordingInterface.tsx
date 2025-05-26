@@ -10,6 +10,14 @@ const COUNTDOWN_SECONDS = 3;
 const SAMPLE_INTERVAL_MS = 150; // How often to generate a new bar for the visualizer
 const LIVE_VISUAL_SENSITIVITY_BOOST = 4.0; // Experiment with this value (e.g., 1.5, 2.0, 2.5)
 
+// Helper to check if the browser is likely Safari (and not a Chromium-based browser)
+const isSafariBrowser = () => {
+  if (typeof navigator === 'undefined') return false; // Guard for SSR or non-browser environments
+  const ua = navigator.userAgent;
+  // Test for Safari, but not Chrome, Chromium (CrOS), Firefox on iOS (FXiOS), or Edge (Edg)
+  return /^((?!chrome|android|crios|fxios|edg| CriOS).)*safari/i.test(ua) && !/chromium/i.test(ua);
+};
+
 interface RecordingInterfaceProps {
   targetDurationMs: number; // Receive the target duration from parent
   onRecordingComplete: (blob: Blob, durationMs: number, waveformPeaks: number[]) => void; // Pass duration back and waveform peaks
@@ -154,29 +162,71 @@ const RecordingInterface: React.FC<RecordingInterfaceProps> = ({ targetDurationM
       sourceRef.current.connect(analyserRef.current);
       animationFrameRef.current = requestAnimationFrame(updateWaveformData);
 
-      // Experiment with explicit mimeTypes for better mobile compatibility
-      const mimeTypesToTry = [
-        'audio/webm;codecs=opus', // Common default, good quality
-        'audio/webm', // More generic WebM, browser chooses codec (likely Opus)
-        'audio/ogg;codecs=opus',  // Opus in Ogg container
-        // 'audio/aac', // AAC attempt (less likely to be supported by MediaRecorder directly)
-        // 'audio/mp4', // MP4 container, might try for AAC (less likely)
-      ];
-
       let chosenMimeType = '';
-      for (const type of mimeTypesToTry) {
-        if (MediaRecorder.isTypeSupported(type)) {
-          chosenMimeType = type;
-          break;
+      const isSafari = isSafariBrowser(); // Call the helper
+
+      if (isSafari) {
+        if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          chosenMimeType = 'audio/mp4';
+          console.log('RecordingInterface: Safari detected, attempting to use mimeType: audio/mp4');
+        } else {
+          console.log('RecordingInterface: Safari detected, but audio/mp4 is NOT supported by its MediaRecorder. Using browser default.');
+        }
+      } else {
+        // For non-Safari browsers, try WebM/Opus options first
+        const nonSafariMimeTypesToTry = [
+          'audio/webm;codecs=opus',
+          'audio/webm',
+          'audio/ogg;codecs=opus',
+        ];
+        for (const type of nonSafariMimeTypesToTry) {
+          if (MediaRecorder.isTypeSupported(type)) {
+            chosenMimeType = type;
+            break;
+          }
+        }
+        if (chosenMimeType) {
+          console.log(`RecordingInterface: Non-Safari browser, using explicitly supported mimeType: ${chosenMimeType}`);
+        } else {
+          console.log('RecordingInterface: Non-Safari browser, no preferred mimeType supported, using browser default.');
         }
       }
 
-      if (chosenMimeType) {
-        console.log(`RecordingInterface: Using explicitly supported mimeType: ${chosenMimeType}`);
-        mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: chosenMimeType });
-      } else {
-        console.log('RecordingInterface: No preferred mimeType supported, using browser default.');
-        mediaRecorderRef.current = new MediaRecorder(stream);
+      // Initialize MediaRecorder
+      try {
+        if (chosenMimeType) {
+          mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: chosenMimeType });
+        } else {
+          mediaRecorderRef.current = new MediaRecorder(stream); // Fallback to browser default
+        }
+      } catch (e) {
+        console.error('RecordingInterface: Error initializing MediaRecorder:', e, 'Falling back to default init.');
+        if (!mediaRecorderRef.current && stream) {
+             try {
+                mediaRecorderRef.current = new MediaRecorder(stream);
+             } catch (fallbackError) {
+                console.error('RecordingInterface: Critical error initializing MediaRecorder even with defaults:', fallbackError);
+                setMicError('Failed to initialize audio recorder. Your browser might not support recording.');
+                stopRecording(); // Clean up
+                return; // Prevent further execution in startRecording
+             }
+        }
+      }
+
+      // Safeguard: Ensure MediaRecorder was initialized
+      if (!mediaRecorderRef.current) {
+        console.error("RecordingInterface: MediaRecorder is null after initialization attempts. Aborting startRecording.");
+        // Ensure micError is set if not already by a deeper catch
+        if (!micError) {
+            setMicError('Audio recorder could not be started. Please check permissions or try a different browser.');
+        }
+        // stopRecording() would have been called by the deeper catch if it got that far.
+        // If we reached here due to the outer catch not setting mediaRecorderRef.current and not returning,
+        // ensure cleanup is called if stream was acquired.
+        if (streamRef.current) { // Check if stream was even acquired before trying to stop it again
+            stopRecording(); // Call to ensure cleanup if not already done by deeper catch
+        }
+        return;
       }
 
       audioChunksRef.current = [];

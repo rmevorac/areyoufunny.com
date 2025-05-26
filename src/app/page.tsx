@@ -229,14 +229,14 @@ export default function Home() {
         setErrorMessage("Could not verify your post limit. Please try again.");
         setNextPostAvailableAtUTC(null); // Clear time on error
         return;
-      }
+    }
 
       if (!rpcResponseArray || rpcResponseArray.length === 0) {
         console.error("PAGE.TSX: handleStartSet - RPC returned empty or invalid response.");
         setErrorMessage("Failed to get post limit status for starting set.");
         setNextPostAvailableAtUTC(null);
         return;
-    }
+      }
       
       const rpcResult = rpcResponseArray[0];
       const canPost = rpcResult.can_post;
@@ -248,7 +248,7 @@ export default function Home() {
         console.log("PAGE.TSX: handleStartSet - Daily limit confirmed reached. Proceeding anyway for testing (COMMENTED OUT BLOCK).");
         // setAppState('limitReached'); // COMMENTED OUT FOR TESTING
         // return; // COMMENTED OUT FOR TESTING
-    }
+      }
 
       console.log("PAGE.TSX: handleStartSet - Authenticated user, limit NOT reached (or bypassed for testing). Opening warning modal.");
       setIsWarningModalOpen(true);
