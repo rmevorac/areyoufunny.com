@@ -108,7 +108,8 @@ export default function Home() {
         setNextPostAvailableAtUTC(nextAvailableTime); // Store the timestamp
 
         if (canPost === false) {
-          setAppState('limitReached');
+          // console.log("PAGE.TSX: checkUserPostLimit - Daily limit reached. AppState would be set to limitReached (COMMENTED OUT FOR TESTING).");
+          // setAppState('limitReached'); // COMMENTED OUT FOR TESTING
         } else {
           if (appState === 'limitReached') {
             setAppState('idle');
@@ -244,12 +245,12 @@ export default function Home() {
       setNextPostAvailableAtUTC(nextAvailableTime); // Update timestamp from this check too
 
       if (canPost === false) {
-        console.log("PAGE.TSX: handleStartSet - Daily limit confirmed reached. Setting appState.");
-        setAppState('limitReached');
-        return;
+        console.log("PAGE.TSX: handleStartSet - Daily limit confirmed reached. Proceeding anyway for testing (COMMENTED OUT BLOCK).");
+        // setAppState('limitReached'); // COMMENTED OUT FOR TESTING
+        // return; // COMMENTED OUT FOR TESTING
     }
 
-      console.log("PAGE.TSX: handleStartSet - Authenticated user, limit NOT reached. Opening warning modal.");
+      console.log("PAGE.TSX: handleStartSet - Authenticated user, limit NOT reached (or bypassed for testing). Opening warning modal.");
       setIsWarningModalOpen(true);
 
     } catch (error) {
