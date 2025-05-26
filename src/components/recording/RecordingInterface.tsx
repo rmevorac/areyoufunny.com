@@ -154,7 +154,31 @@ const RecordingInterface: React.FC<RecordingInterfaceProps> = ({ targetDurationM
       sourceRef.current.connect(analyserRef.current);
       animationFrameRef.current = requestAnimationFrame(updateWaveformData);
 
-      mediaRecorderRef.current = new MediaRecorder(stream);
+      // Experiment with explicit mimeTypes for better mobile compatibility
+      const mimeTypesToTry = [
+        'audio/webm;codecs=opus', // Common default, good quality
+        'audio/webm', // More generic WebM, browser chooses codec (likely Opus)
+        'audio/ogg;codecs=opus',  // Opus in Ogg container
+        // 'audio/aac', // AAC attempt (less likely to be supported by MediaRecorder directly)
+        // 'audio/mp4', // MP4 container, might try for AAC (less likely)
+      ];
+
+      let chosenMimeType = '';
+      for (const type of mimeTypesToTry) {
+        if (MediaRecorder.isTypeSupported(type)) {
+          chosenMimeType = type;
+          break;
+        }
+      }
+
+      if (chosenMimeType) {
+        console.log(`RecordingInterface: Using explicitly supported mimeType: ${chosenMimeType}`);
+        mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: chosenMimeType });
+      } else {
+        console.log('RecordingInterface: No preferred mimeType supported, using browser default.');
+        mediaRecorderRef.current = new MediaRecorder(stream);
+      }
+
       audioChunksRef.current = [];
       actualDurationMsRef.current = null; 
 
