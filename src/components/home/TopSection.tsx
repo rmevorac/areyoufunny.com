@@ -5,6 +5,7 @@ import { User } from '@supabase/supabase-js';
 import RecordingInterface from '@/components/recording/RecordingInterface';
 import Button from '@/components/ui/Button';
 import type { AppState } from '@/app/page';
+import { MAX_VALID_DURATION_MS } from '@/config/constants';
 
 interface TopSectionProps {
   appState: AppState; // This will now use the imported AppState
@@ -12,8 +13,12 @@ interface TopSectionProps {
   errorMessage: string | null;
   showUploadingIndicator: boolean;
   onStartSet: () => void;
-  onRecordingComplete: (blob: Blob, durationMs: number, waveformPeaks: number[]) => void;
-  onCancelCountdown: () => void;
+  onRecordingComplete: (
+    blob: Blob, 
+    durationMs: number, 
+    waveformPeaks: number[], 
+    actualMimeType: string
+  ) => void;
   nextPostAvailableAtUTC?: string | null;
 }
 
@@ -34,7 +39,6 @@ const TopSection: React.FC<TopSectionProps> = ({
   showUploadingIndicator,
   onStartSet,
   onRecordingComplete,
-  onCancelCountdown,
   nextPostAvailableAtUTC,
 }) => {
   const [countdown, setCountdown] = useState<string>("");
@@ -83,9 +87,8 @@ const TopSection: React.FC<TopSectionProps> = ({
   switch (appState) {
     case 'recording':
       return <RecordingInterface 
-                targetDurationMs={60000} 
+                targetDurationMs={MAX_VALID_DURATION_MS}
                 onRecordingComplete={onRecordingComplete} 
-                onCancelCountdown={onCancelCountdown}
               />;
               
     case 'uploading':

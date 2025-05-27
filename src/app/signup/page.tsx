@@ -266,8 +266,8 @@ function SignupForm() {
 
 export default function SignupPage() {
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <Suspense fallback={<div className="text-center text-gray-500">Loading...</div>}>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
+      <Suspense fallback={<div>Loading form...</div>}>
         <SignupForm />
       </Suspense>
     </div>

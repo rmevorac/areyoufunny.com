@@ -95,7 +95,7 @@ export default function Header() {
 
   if (authLoading) {
     return (
-      <header className="bg-white text-gray-700 p-4 flex justify-between items-center shadow-sm">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white text-gray-700 p-4 flex justify-between items-center shadow-sm">
         <Link href="/" className="text-xl font-bold text-red-600 hover:text-red-700">
           areufunny.com
         </Link>
@@ -105,23 +105,26 @@ export default function Header() {
   }
 
   return (
-    <header className="bg-white text-gray-700 p-4 flex justify-between items-center shadow-sm">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white text-gray-700 p-4 flex justify-between items-center shadow-sm">
       <Link href="/" className="text-xl font-bold text-red-600 hover:text-red-700">
         areufunny.com
       </Link>
       <div className="text-sm">
         {user && profile ? (
-          <div className="flex items-center space-x-4">
-            <span className="text-gray-600">{profile.username} | Pop Score: {profile.pop_score ?? 0}</span>
+          <div className="flex flex-col items-end">
+            <div className="text-right">
+              <p className="text-gray-600">{profile.username}</p>
+              <p className="text-gray-600">Pop Score: {profile.pop_score ?? 0}</p>
+            </div>
             <button
               onClick={handleLogout}
-              className="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+              className="mt-1 bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
             >
               Logout
             </button>
           </div>
         ) : (
-          <Link href="/login" className="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50">
+          <Link href="/login" className="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-opacity-50">
             Log In
           </Link>
         )}
