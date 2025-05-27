@@ -159,7 +159,6 @@ export default function Home() {
         setNextPostAvailableAtUTC(null);
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, isAuthLoading, checkUserPostLimit, appState /*, setAppState, setNextPostAvailableAtUTC */]);
   // setAppState and setNextPostAvailableAtUTC are stable, can be omitted if preferred, but exhaustive-deps includes them.
   // Keeping for clarity given the comment about managed circular dependency.
@@ -402,7 +401,7 @@ export default function Home() {
     }
     // console.log(`handleVote: Initiated for set ${setId}, vote ${voteValue}, user ${currentUser.id}.`);
     const currentSetIndex = feedSets.findIndex(s => s.id === setId);
-    let currentSet: FeedSet | undefined = currentSetIndex !== -1 ? feedSets[currentSetIndex] : undefined;
+    const currentSet: FeedSet | undefined = currentSetIndex !== -1 ? feedSets[currentSetIndex] : undefined;
     if (currentSet) {
         // console.log(`handleVote: Set ${setId} found locally. Current user vote: ${currentSet.user_vote}. Optimistic update.`);
         let optimisticUpVotes = currentSet.up_votes;

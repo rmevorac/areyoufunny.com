@@ -6,6 +6,13 @@ import CountdownDisplay from './CountdownDisplay';
 import RecordingTimer from './RecordingTimer';
 import { MIN_VALID_DURATION_MS } from '@/config/constants';
 
+// Extend the Window interface for webkitAudioContext
+declare global {
+  interface Window {
+    webkitAudioContext?: new (contextOptions?: AudioContextOptions) => AudioContext;
+  }
+}
+
 // Default duration can be defined here or passed as prop if needed
 const COUNTDOWN_SECONDS = 3;
 const SAMPLE_INTERVAL_MS = 150; // How often to generate a new bar for the visualizer
@@ -174,7 +181,16 @@ const RecordingInterface: React.FC<RecordingInterfaceProps> = ({ targetDurationM
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      // Use the extended Window type
+      const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextConstructor) {
+        console.error("RecordingInterface: AudioContext is not supported.");
+        setMicError("Your browser does not support the necessary audio features.");
+        _cleanupRecordingSession(); // Clean up stream etc.
+        return;
+      }
+      audioContextRef.current = new AudioContextConstructor();
+      
       analyserRef.current = audioContextRef.current.createAnalyser();
       analyserRef.current.fftSize = 256;
       const bufferLength = analyserRef.current.frequencyBinCount;
