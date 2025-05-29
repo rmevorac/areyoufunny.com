@@ -111,18 +111,32 @@ export default function Header() {
       </Link>
       <div className="text-sm">
         {user && profile ? (
-          <div className="flex flex-col items-end">
-            <div className="text-right">
-              <p className="text-gray-600">{profile.username}</p>
-              <p className="text-gray-600">Pop Score: {profile.pop_score ?? 0}</p>
+          <>
+            {/* Mobile view: stacked, right-aligned, logout button below */}
+            <div className="flex flex-col items-end md:hidden">
+              <div className="text-right">
+                <p className="text-gray-600">{profile.username}</p>
+                <p className="text-gray-600">Pop Score: {profile.pop_score ?? 0}</p>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="mt-1 bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-xs focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+              >
+                Logout
+              </button>
             </div>
-            <button
-              onClick={handleLogout}
-              className="mt-1 bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
-            >
-              Logout
-            </button>
-          </div>
+
+            {/* Desktop view: inline, with separator, logout button beside */}
+            <div className="hidden md:flex md:items-center md:space-x-4">
+              <span className="text-gray-600">{profile.username} | Pop Score: {profile.pop_score ?? 0}</span>
+              <button
+                onClick={handleLogout}
+                className="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded sm:text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+              >
+                Logout
+              </button>
+            </div>
+          </>
         ) : (
           <Link href="/login" className="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-opacity-50">
             Log In
